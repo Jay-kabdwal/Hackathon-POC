@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+enum JudgingRound {
+  IDEA
+  SOLUTION
+}
+enum ResultStage {
+  HIDDEN
+  IDEA_REVEALED
+  FINAL_REVEALED
+}
+
+model SuperAdmin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Team {
+  id        String       @id @default(cuid())
+  teamNumber Int         @unique @default(autoincrement())
+  name      String       @unique
+  members   TeamMember[]
+  scores    Score[]
+  createdAt DateTime     @default(now())
+}
+
+model TeamMember {
+  id         String   @id @default(cuid())
+  name       String
+  email      String   @unique
+  employeeId String   @unique
+  isLeader   Boolean  @default(false)
+  teamId     String
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+}
+
+model Judge {
+  id        String      @id @default(cuid())
+  name      String
+  email     String      @unique
+  isActive  Boolean     @default(true)
+  scores    Score[]
+  otps      JudgeOTP[]
+  createdAt DateTime    @default(now())
+}
+
+model JudgeOTP {
+  id        String   @id @default(cuid())
+  judgeId   String
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  judge Judge @relation( fields: [judgeId],references: [id],onDelete: Cascade)
+
+  @@index([judgeId, expiresAt])
+}
+
+model Score {
+  id        String       @id @default(cuid())
+  teamId    String
+  judgeId   String
+  round     JudgingRound
+  points    Int
+  updatedAt DateTime     @updatedAt
+  createdAt DateTime     @default(now())
+
+  team  Team  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  judge Judge @relation(fields: [judgeId], references: [id], onDelete: Restrict)
+
+  @@unique([teamId, judgeId, round])
+  @@index([teamId, round])
+}
+
+
+model HackathonSettings {
+  id             Int         @id @default(1)
+  judgingEnabled Boolean     @default(false)
+  resultStage    ResultStage @default(HIDDEN)
+  updatedAt      DateTime    @updatedAt
+}

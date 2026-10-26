@@ -1,7 +1,18 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Markdown files (except root README.md)
+*.md
+!/README.md
 
-# dependencies
-/node_modules
+# AI coding assistant skills
+/.agents/
+/.claude/
+/.windsurf/
+
+# Next.js generated files
+/.next/
+/out/
+
+# Dependencies
+/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -10,32 +21,29 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
+# Environment variables
+.env*
+
+# Build output
+/build
 /coverage
 
-# next.js
-/.next/
-/out/
+# Vercel
+.vercel/
 
-# production
-/build
+# Generated Prisma client
+/app/generated/prisma/
 
-# misc
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Miscellaneous
 .DS_Store
 *.pem
 
-# debug
+# Debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
