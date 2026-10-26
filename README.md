@@ -136,6 +136,34 @@ that `SMTP_PASS` is a Google App Password. If the account does not offer App
 Passwords, Gmail SMTP password authentication cannot be used with this setup;
 do not use the normal account password.
 
+## Results API
+
+`GET /api/results` is public and uses `HackathonSettings.resultStage`.
+
+```bash
+curl http://localhost:3000/api/results
+```
+
+When the stage is `HIDDEN`, the response contains no scores:
+
+```json
+{
+  "success": true,
+  "message": "Results have not been released yet.",
+  "data": {
+    "resultStage": "HIDDEN",
+    "released": false,
+    "results": []
+  }
+}
+```
+
+At `IDEA_REVEALED`, each registered team is returned with its IDEA total.
+Missing scores count as zero. At `FINAL_REVEALED`, `totalScore` is the sum of
+the IDEA and SOLUTION totals because the project has no other final-scoring
+rule. Equal totals receive the same rank; team number is used only as a
+deterministic display order for ties.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
