@@ -112,7 +112,7 @@ export async function revokeAuthSession(jti: string) {
 }
 
 export async function cleanupExpiredAuthData(now = new Date()) {
-    await prisma.$transaction([
+    await Promise.all([
         prisma.authSession.deleteMany({ where: { expiresAt: { lte: now } } }),
         prisma.judgeOTP.deleteMany({ where: { expiresAt: { lte: now } } }),
     ]);
