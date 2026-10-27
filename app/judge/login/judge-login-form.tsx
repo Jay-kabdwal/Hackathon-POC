@@ -34,7 +34,10 @@ export default function JudgeLoginForm() {
         setError(payload.message || "Unable to send a verification code.");
         return;
       }
-      sessionStorage.setItem("judge_email", payload.data?.email || email.trim().toLowerCase());
+      sessionStorage.setItem(
+        "judge_email",
+        payload.data?.email || email.trim().toLowerCase(),
+      );
       router.push("/judge/verify-otp");
     } catch {
       setError("Unable to reach the judge authentication service.");
@@ -57,17 +60,45 @@ export default function JudgeLoginForm() {
         </Link>
         <div className="admin-card mt-8 p-7 sm:p-10">
           <p className="eyebrow">Judge workspace</p>
-          <h1 className="mt-3 font-heading text-4xl font-semibold">Welcome, Judge.</h1>
-          <p className="mt-4 leading-7 text-[#7B7B6A]">Sign in to evaluate teams and submit your scores.</p>
+          <h1 className="mt-3 font-heading text-4xl font-semibold">
+            Welcome, Judge.
+          </h1>
+          <p className="mt-4 leading-7 text-[#7B7B6A]">
+            Sign in to evaluate teams and submit your scores.
+          </p>
           <form onSubmit={submit} className="mt-8 space-y-5">
             <label className="block text-sm font-semibold">
               Company email
-              <input className="field mt-2" required type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
+              <input
+                className="field mt-2"
+                required
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
+              />
             </label>
-            {error && <p role="alert" className="rounded-xl bg-[#A3B18A]/20 p-3 text-sm text-[#59664A]">{error}</p>}
-            <button disabled={loading} className="button-primary w-full disabled:opacity-50">{loading ? "Sending code…" : "Send OTP"}</button>
+            {error && (
+              <p
+                role="alert"
+                className="rounded-xl bg-[#A3B18A]/20 p-3 text-sm text-[#59664A]"
+              >
+                {error}
+              </p>
+            )}
+            <button
+              disabled={loading}
+              className="button-primary w-full disabled:opacity-50"
+            >
+              {loading ? "Sending code…" : "Send OTP"}
+            </button>
           </form>
-          <Link href="/" className="mt-6 block text-center text-sm text-[#7B7B6A]">Back to public website</Link>
+          <Link
+            href="/"
+            className="mt-6 block text-center text-sm text-[#7B7B6A]"
+          >
+            Back to public website
+          </Link>
         </div>
       </div>
     </main>

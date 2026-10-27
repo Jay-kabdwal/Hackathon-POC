@@ -3,7 +3,11 @@ import { getCurrentAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
+export default async function ProtectedAdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const admin = await getCurrentAdmin();
   if (!admin) redirect("/admin/login");
   return children;

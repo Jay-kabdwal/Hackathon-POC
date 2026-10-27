@@ -48,7 +48,11 @@ export function JudgeShell({
             >
               Return to website
             </Link>
-            <button type="button" onClick={logout} className="button-primary text-xs">
+            <button
+              type="button"
+              onClick={logout}
+              className="button-primary text-xs"
+            >
               Log out
             </button>
           </div>
@@ -73,7 +77,11 @@ export function JudgeError({
     >
       {message}
       {retry && (
-        <button type="button" onClick={retry} className="ml-3 font-semibold underline">
+        <button
+          type="button"
+          onClick={retry}
+          className="ml-3 font-semibold underline"
+        >
           Try again
         </button>
       )}

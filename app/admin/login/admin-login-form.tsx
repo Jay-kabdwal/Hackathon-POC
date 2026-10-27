@@ -54,24 +54,65 @@ export default function AdminLoginForm() {
         </Link>
         <div className="admin-card mt-8 p-7 sm:p-10">
           <p className="eyebrow">Admin portal</p>
-          <h1 className="mt-3 font-heading text-4xl font-semibold">Welcome back.</h1>
-          <p className="mt-4 leading-7 text-[#7B7B6A]">Sign in to manage your hackathon.</p>
+          <h1 className="mt-3 font-heading text-4xl font-semibold">
+            Welcome back.
+          </h1>
+          <p className="mt-4 leading-7 text-[#7B7B6A]">
+            Sign in to manage your hackathon.
+          </p>
           <form onSubmit={submit} className="mt-8 space-y-5">
             <label className="block text-sm font-semibold">
               Email
-              <input className="field mt-2" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" />
+              <input
+                className="field mt-2"
+                type="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
+              />
             </label>
             <label className="block text-sm font-semibold">
               Password
               <div className="relative mt-2">
-                <input className="field pr-20" required type={show ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" />
-                <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#7B7B6A]">{show ? "Hide" : "Show"}</button>
+                <input
+                  className="field pr-20"
+                  required
+                  type={show ? "text" : "password"}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShow(!show)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#7B7B6A]"
+                >
+                  {show ? "Hide" : "Show"}
+                </button>
               </div>
             </label>
-            {error && <p role="alert" className="rounded-xl bg-[#A3B18A]/20 p-3 text-sm text-[#59654A]">{error}</p>}
-            <button disabled={loading} className="button-primary w-full disabled:opacity-50">{loading ? "Signing in…" : "Sign in"}</button>
+            {error && (
+              <p
+                role="alert"
+                className="rounded-xl bg-[#A3B18A]/20 p-3 text-sm text-[#59654A]"
+              >
+                {error}
+              </p>
+            )}
+            <button
+              disabled={loading}
+              className="button-primary w-full disabled:opacity-50"
+            >
+              {loading ? "Signing in…" : "Sign in"}
+            </button>
           </form>
-          <Link href="/" className="mt-6 block text-center text-sm text-[#7B7B6A]">Return to public website</Link>
+          <Link
+            href="/"
+            className="mt-6 block text-center text-sm text-[#7B7B6A]"
+          >
+            Return to public website
+          </Link>
         </div>
       </div>
     </main>

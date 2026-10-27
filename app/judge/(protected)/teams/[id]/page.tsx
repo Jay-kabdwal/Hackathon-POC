@@ -32,7 +32,9 @@ type TeamResponse = {
 export default function JudgeTeamPage() {
   const { id } = useParams<{ id: string }>();
   const [team, setTeam] = useState<Team | null>(null);
-  const [settings, setSettings] = useState<TeamResponse["settings"] | null>(null);
+  const [settings, setSettings] = useState<TeamResponse["settings"] | null>(
+    null,
+  );
   const [round, setRound] = useState<Round>("IDEA");
   const [points, setPoints] = useState("");
   const [error, setError] = useState("");
@@ -89,9 +91,13 @@ export default function JudgeTeamPage() {
         ← Back to teams
       </Link>
       {error && !team ? (
-        <div className="mt-6"><JudgeError message={error} /></div>
+        <div className="mt-6">
+          <JudgeError message={error} />
+        </div>
       ) : !team ? (
-        <div className="mt-6"><JudgeLoading /></div>
+        <div className="mt-6">
+          <JudgeLoading />
+        </div>
       ) : (
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_.8fr]">
           <div className="admin-card min-w-0 overflow-hidden p-6">
@@ -101,10 +107,15 @@ export default function JudgeTeamPage() {
             </h2>
             <p className="mt-3 text-[#7B7B6A]">{team.memberCount} members</p>
             <div className="mt-8">
-              <h3 className="font-heading text-xl font-semibold">Team members</h3>
+              <h3 className="font-heading text-xl font-semibold">
+                Team members
+              </h3>
               <ul className="mt-4 space-y-3">
                 {team.members.map((member) => (
-                  <li key={member} className="break-words rounded-xl bg-[#E6E9DE] px-4 py-3 text-sm">
+                  <li
+                    key={member}
+                    className="break-words rounded-xl bg-[#E6E9DE] px-4 py-3 text-sm"
+                  >
                     {member}
                   </li>
                 ))}
@@ -117,7 +128,8 @@ export default function JudgeTeamPage() {
               Submit a score.
             </h2>
             <p className="mt-3 text-sm leading-6 text-[#7B7B6A]">
-              Only the active judging round accepts scores. Revealed rounds are locked.
+              Only the active judging round accepts scores. Revealed rounds are
+              locked.
             </p>
             <label className="mt-6 block text-sm font-semibold">
               Judging round
@@ -155,10 +167,25 @@ export default function JudgeTeamPage() {
                     : "Scores for this round are locked after results are revealed."}
               </p>
             )}
-            {error && <div className="mt-5"><JudgeError message={error} /></div>}
-            {notice && <p className="mt-5 rounded-xl bg-[#A3B18A]/20 p-3 text-sm font-semibold text-[#59664A]">{notice}</p>}
-            <button disabled={saving || !canSubmit} className="button-primary mt-6 w-full disabled:opacity-50">
-              {saving ? "Saving score…" : canSubmit ? "Save score" : "Scoring unavailable"}
+            {error && (
+              <div className="mt-5">
+                <JudgeError message={error} />
+              </div>
+            )}
+            {notice && (
+              <p className="mt-5 rounded-xl bg-[#A3B18A]/20 p-3 text-sm font-semibold text-[#59664A]">
+                {notice}
+              </p>
+            )}
+            <button
+              disabled={saving || !canSubmit}
+              className="button-primary mt-6 w-full disabled:opacity-50"
+            >
+              {saving
+                ? "Saving score…"
+                : canSubmit
+                  ? "Save score"
+                  : "Scoring unavailable"}
             </button>
           </form>
         </div>

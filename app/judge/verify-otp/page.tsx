@@ -35,7 +35,9 @@ export default function VerifyOtpPage() {
         message?: string;
       };
       if (!response.ok || !payload.success) {
-        setError(payload.message || "The verification code could not be accepted.");
+        setError(
+          payload.message || "The verification code could not be accepted.",
+        );
         return;
       }
       sessionStorage.removeItem("judge_email");
@@ -60,7 +62,9 @@ export default function VerifyOtpPage() {
         </div>
         <div className="admin-card mt-8 p-7 sm:p-10">
           <p className="eyebrow">Email verification</p>
-          <h1 className="mt-3 font-heading text-4xl font-semibold">Verify your email.</h1>
+          <h1 className="mt-3 font-heading text-4xl font-semibold">
+            Verify your email.
+          </h1>
           <p className="mt-4 leading-7 text-[#7B7B6A]">
             Enter the six-digit code sent to your registered company email.
           </p>
@@ -73,16 +77,31 @@ export default function VerifyOtpPage() {
                 maxLength={6}
                 required
                 value={otp}
-                onChange={(event) => setOtp(event.target.value.replace(/\D/g, ""))}
+                onChange={(event) =>
+                  setOtp(event.target.value.replace(/\D/g, ""))
+                }
                 autoComplete="one-time-code"
               />
             </label>
-            {error && <p role="alert" className="rounded-xl bg-[#A3B18A]/20 p-3 text-sm text-[#59654A]">{error}</p>}
-            <button disabled={loading} className="button-primary w-full disabled:opacity-50">
+            {error && (
+              <p
+                role="alert"
+                className="rounded-xl bg-[#A3B18A]/20 p-3 text-sm text-[#59654A]"
+              >
+                {error}
+              </p>
+            )}
+            <button
+              disabled={loading}
+              className="button-primary w-full disabled:opacity-50"
+            >
               {loading ? "Verifying…" : "Verify and continue"}
             </button>
           </form>
-          <Link href="/judge/login" className="mt-6 block text-center text-sm text-[#7B7B6A] hover:text-[#59664A]">
+          <Link
+            href="/judge/login"
+            className="mt-6 block text-center text-sm text-[#7B7B6A] hover:text-[#59664A]"
+          >
             Back to login
           </Link>
         </div>
