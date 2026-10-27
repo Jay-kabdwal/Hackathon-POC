@@ -120,8 +120,9 @@ model Score {
 
 
 model HackathonSettings {
-  id             Int         @id @default(1)
-  judgingEnabled Boolean     @default(false)
-  resultStage    ResultStage @default(HIDDEN)
-  updatedAt      DateTime    @updatedAt
+  id             Int          @id @default(1)
+  judgingEnabled Boolean      @default(false)
+  judgingRound   JudgingRound @default(IDEA)
+  resultStage    ResultStage  @default(HIDDEN)
+  updatedAt      DateTime     @updatedAt
 }

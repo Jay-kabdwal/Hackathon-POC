@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { getCurrentAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ResultStage } from "@/generated/prisma/enums";
+import { JudgingRound, ResultStage } from "@/generated/prisma/enums";
 
 export const runtime = "nodejs";
 
 const resultStages = Object.values(ResultStage);
+const judgingRounds = Object.values(JudgingRound);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -40,6 +41,7 @@ export async function PATCH(request: Request) {
 
         const data: {
             judgingEnabled?: boolean;
+            judgingRound?: JudgingRound;
             resultStage?: ResultStage;
         } = {};
 
@@ -51,6 +53,19 @@ export async function PATCH(request: Request) {
                 );
             }
             data.judgingEnabled = body.judgingEnabled;
+        }
+
+        if ("judgingRound" in body) {
+            if (
+                typeof body.judgingRound !== "string" ||
+                !judgingRounds.includes(body.judgingRound as JudgingRound)
+            ) {
+                return NextResponse.json(
+                    { success: false, message: "judgingRound is invalid." },
+                    { status: 400 }
+                );
+            }
+            data.judgingRound = body.judgingRound as JudgingRound;
         }
 
         if ("resultStage" in body) {
@@ -66,7 +81,7 @@ export async function PATCH(request: Request) {
             data.resultStage = body.resultStage as ResultStage;
         }
 
-        const allowedFields = new Set(["judgingEnabled", "resultStage"]);
+        const allowedFields = new Set(["judgingEnabled", "judgingRound", "resultStage"]);
         if (
             Object.keys(body).some((field) => !allowedFields.has(field)) ||
             Object.keys(data).length === 0
@@ -74,7 +89,7 @@ export async function PATCH(request: Request) {
             return NextResponse.json(
                 {
                     success: false,
-                    message: "Only judgingEnabled and resultStage may be updated.",
+                    message: "Only judgingEnabled, judgingRound, and resultStage may be updated.",
                 },
                 { status: 400 }
             );
@@ -85,12 +100,14 @@ export async function PATCH(request: Request) {
             create: {
                 id: 1,
                 judgingEnabled: data.judgingEnabled ?? false,
+                judgingRound: data.judgingRound ?? JudgingRound.IDEA,
                 resultStage: data.resultStage ?? ResultStage.HIDDEN,
             },
             update: data,
             select: {
                 id: true,
                 judgingEnabled: true,
+                judgingRound: true,
                 resultStage: true,
                 updatedAt: true,
             },

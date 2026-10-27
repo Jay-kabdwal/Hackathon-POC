@@ -56,11 +56,30 @@ export async function POST(request: Request) {
 
         const settings = await prisma.hackathonSettings.findUnique({
             where: { id: 1 },
-            select: { judgingEnabled: true },
+            select: { judgingEnabled: true, judgingRound: true, resultStage: true },
         });
         if (!settings?.judgingEnabled) {
             return NextResponse.json(
                 { success: false, message: "Judging is not currently enabled." },
+                { status: 403 }
+            );
+        }
+
+        const requestedRound = body.round as JudgingRound;
+        if (settings.judgingRound !== requestedRound) {
+            return NextResponse.json(
+                { success: false, message: `Judging is not currently open for the ${requestedRound} round.` },
+                { status: 403 }
+            );
+        }
+
+        const roundAlreadyRevealed =
+            settings.resultStage === "FINAL_REVEALED" ||
+            (requestedRound === JudgingRound.IDEA &&
+                settings.resultStage === "IDEA_REVEALED");
+        if (roundAlreadyRevealed) {
+            return NextResponse.json(
+                { success: false, message: "Scores for this round are locked after results are revealed." },
                 { status: 403 }
             );
         }
@@ -81,13 +100,13 @@ export async function POST(request: Request) {
                 teamId_judgeId_round: {
                     teamId: team.id,
                     judgeId: judge.id,
-                    round: body.round as JudgingRound,
+                    round: requestedRound,
                 },
             },
             create: {
                 teamId: team.id,
                 judgeId: judge.id,
-                round: body.round as JudgingRound,
+                round: requestedRound,
                 points: body.points,
             },
             update: { points: body.points },

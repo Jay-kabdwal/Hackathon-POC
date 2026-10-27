@@ -91,7 +91,8 @@ Use the following structure and replace every placeholder:
 
 ```env
 # PostgreSQL connection string
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
+# Use explicit TLS certificate and hostname verification.
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=verify-full"
 
 # Admin seed account
 ADMIN_EMAIL="admin@example.com"
@@ -350,7 +351,8 @@ Before deploying:
 2. Rotate any credentials that may have been exposed during development.
 3. Use a unique high-entropy `JWT_SECRET`.
 4. Use a Gmail app password or another dedicated SMTP credential.
-5. Configure `DATABASE_URL` with TLS and least-privilege database access.
+5. Configure `DATABASE_URL` with `sslmode=verify-full`, TLS, and
+   least-privilege database access.
 6. Set `NODE_ENV=production`.
 7. Serve the application through HTTPS.
 8. Apply migrations with `prisma migrate deploy`.
@@ -380,7 +382,17 @@ accepted by `company.com` alone.
 
 - Confirm `DATABASE_URL` is present and valid.
 - Confirm the database is reachable from the current network.
-- For hosted PostgreSQL, keep the provider's TLS query parameters.
+- Use `sslmode=verify-full` in `DATABASE_URL` for explicit certificate and
+  hostname verification:
+
+  ```env
+  DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=verify-full"
+  ```
+
+- The shared Prisma client normalizes legacy `sslmode=require`,
+  `sslmode=prefer`, and `sslmode=verify-ca` values to `verify-full` at runtime.
+  Update the environment variable directly when possible so Prisma CLI
+  commands and other database tools use the same setting.
 - Run:
 
   ```bash

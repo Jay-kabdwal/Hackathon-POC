@@ -32,7 +32,7 @@ export async function GET(request: Request) {
         }
 
         const assignmentWhere = { assignments: { some: { judgeId: judge.id } } };
-        const [total, teams] = await prisma.$transaction([
+        const [total, teams, settings] = await prisma.$transaction([
             prisma.team.count({ where: assignmentWhere }),
             prisma.team.findMany({
                 where: assignmentWhere,
@@ -40,6 +40,10 @@ export async function GET(request: Request) {
                 skip: (page - 1) * limit,
                 take: limit,
                 select: { id: true, teamNumber: true, name: true, members: { select: { name: true } } },
+            }),
+            prisma.hackathonSettings.findUnique({
+                where: { id: 1 },
+                select: { judgingEnabled: true, judgingRound: true, resultStage: true },
             }),
         ]);
 
@@ -59,6 +63,11 @@ export async function GET(request: Request) {
                     limit,
                     total,
                     totalPages: Math.ceil(total / limit),
+                },
+                settings: settings ?? {
+                    judgingEnabled: false,
+                    judgingRound: "IDEA",
+                    resultStage: "HIDDEN",
                 },
             },
         });
