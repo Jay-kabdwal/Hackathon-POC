@@ -5,7 +5,7 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -36,6 +36,7 @@ model Team {
   name      String       @unique
   members   TeamMember[]
   scores    Score[]
+  assignments JudgeTeamAssignment[]
   createdAt DateTime     @default(now())
 }
 
@@ -57,8 +58,34 @@ model Judge {
   email     String      @unique
   isActive  Boolean     @default(true)
   scores    Score[]
+  assignments JudgeTeamAssignment[]
   otps      JudgeOTP[]
   createdAt DateTime    @default(now())
+}
+
+model JudgeTeamAssignment {
+  id        String   @id @default(cuid())
+  judgeId   String
+  teamId    String
+  createdAt DateTime @default(now())
+
+  judge Judge @relation(fields: [judgeId], references: [id], onDelete: Cascade)
+  team  Team  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([judgeId, teamId])
+  @@index([teamId])
+}
+
+model AuthSession {
+  id        String   @id
+  subjectId String
+  role      String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([subjectId, role])
+  @@index([expiresAt])
 }
 
 model JudgeOTP {

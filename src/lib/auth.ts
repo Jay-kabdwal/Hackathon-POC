@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
+import { randomUUID } from "node:crypto";
 import { prisma } from "./prisma";
 
 export const ADMIN_AUTH_COOKIE = "admin_token";
@@ -7,11 +8,13 @@ export const JUDGE_AUTH_COOKIE = "judge_token";
 
 type AdminTokenPayload = {
     adminId: string;
+    jti: string;
 };
 
 type JudgeTokenPayload = {
     judgeId: string;
     role: "judge";
+    jti: string;
 };
 
 function getJwtSecret(): string {
@@ -48,8 +51,8 @@ function getJwtExpiresIn(): number {
     }
 }
 
-export function signAdminToken(adminId: string): string {
-    return jwt.sign({ adminId } satisfies AdminTokenPayload, getJwtSecret(), {
+export function signAdminToken(adminId: string, jti = randomUUID()): string {
+    return jwt.sign({ adminId, jti } satisfies AdminTokenPayload, getJwtSecret(), {
         expiresIn: getJwtExpiresIn(),
     });
 }
@@ -60,16 +63,18 @@ export function verifyAdminToken(token: string): AdminTokenPayload {
         typeof payload !== "object" ||
         payload === null ||
         typeof payload.adminId !== "string" ||
-        payload.adminId.length === 0
+        payload.adminId.length === 0 ||
+        typeof payload.jti !== "string" ||
+        payload.jti.length === 0
     ) {
         throw new Error("Invalid admin token payload.");
     }
-    return { adminId: payload.adminId };
+    return { adminId: payload.adminId, jti: payload.jti };
 }
 
-export function signJudgeToken(judgeId: string): string {
+export function signJudgeToken(judgeId: string, jti = randomUUID()): string {
     return jwt.sign(
-        { judgeId, role: "judge" } satisfies JudgeTokenPayload,
+        { judgeId, role: "judge", jti } satisfies JudgeTokenPayload,
         getJwtSecret(),
         { expiresIn: getJwtExpiresIn() }
     );
@@ -83,10 +88,30 @@ export function verifyJudgeToken(token: string): JudgeTokenPayload {
         typeof payload.judgeId !== "string" ||
         payload.judgeId.length === 0 ||
         payload.role !== "judge"
+        || typeof payload.jti !== "string"
+        || payload.jti.length === 0
     ) {
         throw new Error("Invalid judge token payload.");
     }
-    return { judgeId: payload.judgeId, role: "judge" };
+    return { judgeId: payload.judgeId, role: "judge", jti: payload.jti };
+}
+
+export async function createAuthSession(subjectId: string, role: "ADMIN" | "JUDGE", jti: string) {
+    return prisma.authSession.create({
+        data: {
+            id: jti,
+            subjectId,
+            role,
+            expiresAt: new Date(Date.now() + getJwtExpiresIn() * 1000),
+        },
+    });
+}
+
+export async function revokeAuthSession(jti: string) {
+    await prisma.authSession.updateMany({
+        where: { id: jti, revokedAt: null },
+        data: { revokedAt: new Date() },
+    });
 }
 
 export async function getCurrentAdmin() {
@@ -99,6 +124,12 @@ export async function getCurrentAdmin() {
     } catch {
         return null;
     }
+
+    const session = await prisma.authSession.findFirst({
+        where: { id: payload.jti, subjectId: payload.adminId, role: "ADMIN", revokedAt: null, expiresAt: { gt: new Date() } },
+        select: { id: true },
+    });
+    if (!session) return null;
 
     return prisma.superAdmin.findUnique({
         where: { id: payload.adminId },
@@ -116,6 +147,12 @@ export async function getCurrentJudge() {
     } catch {
         return null;
     }
+
+    const session = await prisma.authSession.findFirst({
+        where: { id: payload.jti, subjectId: payload.judgeId, role: "JUDGE", revokedAt: null, expiresAt: { gt: new Date() } },
+        select: { id: true },
+    });
+    if (!session) return null;
 
     return prisma.judge.findFirst({
         where: { id: payload.judgeId, isActive: true },

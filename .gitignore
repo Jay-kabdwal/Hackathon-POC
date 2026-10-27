@@ -32,7 +32,7 @@
 .vercel/
 
 # Generated Prisma client
-/app/generated/prisma/
+/src/generated/prisma/
 
 # TypeScript
 *.tsbuildinfo

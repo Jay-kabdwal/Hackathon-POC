@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ResultStage } from "../../../generated/prisma/enums";
+import { ResultStage } from "@/generated/prisma/enums";
 
 export const runtime = "nodejs";
 

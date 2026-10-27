@@ -31,18 +31,15 @@ export async function GET(request: Request) {
             );
         }
 
+        const assignmentWhere = { assignments: { some: { judgeId: judge.id } } };
         const [total, teams] = await prisma.$transaction([
-            prisma.team.count(),
+            prisma.team.count({ where: assignmentWhere }),
             prisma.team.findMany({
+                where: assignmentWhere,
                 orderBy: { teamNumber: "asc" },
                 skip: (page - 1) * limit,
                 take: limit,
-                select: {
-                    id: true,
-                    teamNumber: true,
-                    name: true,
-                    members: { select: { name: true } },
-                },
+                select: { id: true, teamNumber: true, name: true, members: { select: { name: true } } },
             }),
         ]);
 

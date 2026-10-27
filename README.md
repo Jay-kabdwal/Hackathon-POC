@@ -84,6 +84,15 @@ credentials return `401`; malformed input returns `400`. Clear the cookie with:
 curl -i -b cookies.txt -c cookies.txt -X POST http://localhost:3000/api/admin/logout
 ```
 
+Admin and judge JWTs are backed by the `AuthSession` table. Logout revokes the
+server-side session as well as clearing the HTTP-only cookie, so a copied token
+cannot continue to access protected APIs after logout.
+
+Judge access is assignment-backed through `JudgeTeamAssignment`. Existing
+judges and teams are assigned during the security migration, and new judges or
+teams receive assignments transactionally. Both the judge team list and score
+submission endpoint verify the assignment on the server.
+
 To create or update the seeded super admin, set `ADMIN_EMAIL` and
 `ADMIN_PASSWORD` and run:
 

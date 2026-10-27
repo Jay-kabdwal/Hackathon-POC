@@ -125,25 +125,32 @@ export async function POST(request: Request) {
     const leader = members.find((member) => member.isLeader)!;
 
     try {
-        // The team and all members are created atomically.
-        const team = await prisma.team.create({
-            data: {
-                name: normalizedTeamName,
-                members: {
-                    create: members.map((member) => ({
-                        name: member.name,
-                        email: member.email,
-                        employeeId: member.employeeId,
-                        isLeader: member.isLeader,
-                    })),
+        const team = await prisma.$transaction(async (transaction) => {
+            const createdTeam = await transaction.team.create({
+                data: {
+                    name: normalizedTeamName,
+                    members: {
+                        create: members.map((member) => ({
+                            name: member.name,
+                            email: member.email,
+                            employeeId: member.employeeId,
+                            isLeader: member.isLeader,
+                        })),
+                    },
                 },
-            },
-            select: {
-                id: true,
-                name: true,
-                teamNumber: true,
-                createdAt: true,
-            },
+                select: { id: true, name: true, teamNumber: true, createdAt: true },
+            });
+            const judges = await transaction.judge.findMany({
+                where: { isActive: true },
+                select: { id: true },
+            });
+            if (judges.length > 0) {
+                await transaction.judgeTeamAssignment.createMany({
+                    data: judges.map((judge) => ({ judgeId: judge.id, teamId: createdTeam.id })),
+                    skipDuplicates: true,
+                });
+            }
+            return createdTeam;
         });
 
         // Email delivery happens after the database commit and cannot roll it back.

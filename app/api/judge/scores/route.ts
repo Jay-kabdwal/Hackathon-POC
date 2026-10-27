@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentJudge } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { JudgingRound } from "../../../generated/prisma/enums";
+import { JudgingRound } from "@/generated/prisma/enums";
 
 export const runtime = "nodejs";
 const rounds = Object.values(JudgingRound);
@@ -65,8 +65,8 @@ export async function POST(request: Request) {
             );
         }
 
-        const team = await prisma.team.findUnique({
-            where: { id: body.teamId },
+        const team = await prisma.team.findFirst({
+            where: { id: body.teamId, assignments: { some: { judgeId: judge.id } } },
             select: { id: true },
         });
         if (!team) {

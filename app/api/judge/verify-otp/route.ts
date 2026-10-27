@@ -6,7 +6,9 @@ import {
     getJudgeCookieOptions,
     JUDGE_AUTH_COOKIE,
     signJudgeToken,
+    createAuthSession,
 } from "@/lib/auth";
+import { randomUUID } from "node:crypto";
 
 export const runtime = "nodejs";
 
@@ -141,7 +143,9 @@ export async function POST(request: Request) {
             );
         }
 
-        const token = signJudgeToken(judge.id);
+        const jti = randomUUID();
+        const token = signJudgeToken(judge.id, jti);
+        await createAuthSession(judge.id, "JUDGE", jti);
         const response = NextResponse.json({
             success: true,
             message: "Judge login successful.",

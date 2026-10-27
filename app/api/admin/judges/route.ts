@@ -61,15 +61,19 @@ export async function POST(request: Request) {
             );
         }
 
-        const judge = await prisma.judge.create({
-            data: { name, email },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                isActive: true,
-                createdAt: true,
-            },
+        const judge = await prisma.$transaction(async (transaction) => {
+            const createdJudge = await transaction.judge.create({
+                data: { name, email },
+                select: { id: true, name: true, email: true, isActive: true, createdAt: true },
+            });
+            const teams = await transaction.team.findMany({ select: { id: true } });
+            if (teams.length > 0) {
+                await transaction.judgeTeamAssignment.createMany({
+                    data: teams.map((team) => ({ judgeId: createdJudge.id, teamId: team.id })),
+                    skipDuplicates: true,
+                });
+            }
+            return createdJudge;
         });
 
         return NextResponse.json(

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { JudgingRound, ResultStage } from "../../generated/prisma/enums";
+import { JudgingRound, ResultStage } from "@/generated/prisma/enums";
 
 export const runtime = "nodejs";
 

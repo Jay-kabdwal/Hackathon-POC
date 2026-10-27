@@ -6,7 +6,9 @@ import {
     getAdminCookieMaxAge,
     getAdminCookieOptions,
     signAdminToken,
+    createAuthSession,
 } from "@/lib/auth";
+import { randomUUID } from "node:crypto";
 
 export const runtime = "nodejs";
 
@@ -61,7 +63,9 @@ export async function POST(request: Request) {
             );
         }
 
-        const token = signAdminToken(admin.id);
+        const jti = randomUUID();
+        const token = signAdminToken(admin.id, jti);
+        await createAuthSession(admin.id, "ADMIN", jti);
         const response = NextResponse.json(
             {
                 success: true,

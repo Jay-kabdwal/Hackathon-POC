@@ -10,6 +10,8 @@ const OTP_EXPIRATION_MINUTES = 5;
 const REQUEST_WINDOW_MS = 15 * 60 * 1000;
 const MAX_REQUESTS_PER_WINDOW = 3;
 const requestAttempts = new Map<string, number[]>();
+const GENERIC_LOGIN_MESSAGE =
+    "If the account is eligible, a verification code will be sent.";
 
 function isValidEmail(email: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -76,8 +78,12 @@ export async function POST(request: Request) {
 
         if (!judge || !judge.isActive) {
             return NextResponse.json(
-                { success: false, message: "Judge account not found or inactive." },
-                { status: 401 }
+                {
+                    success: true,
+                    message: GENERIC_LOGIN_MESSAGE,
+                    data: { email, expiresInSeconds: OTP_EXPIRATION_MINUTES * 60 },
+                },
+                { status: 202 }
             );
         }
 
@@ -110,21 +116,22 @@ export async function POST(request: Request) {
                 data: { usedAt: new Date() },
             });
 
+            console.error("Judge OTP email delivery failed.");
             return NextResponse.json(
                 {
-                    success: false,
-                    message:
-                        "Unable to send the verification code. Check the server email configuration.",
+                    success: true,
+                    message: GENERIC_LOGIN_MESSAGE,
+                    data: { email, expiresInSeconds: OTP_EXPIRATION_MINUTES * 60 },
                 },
-                { status: 503 }
+                { status: 202 }
             );
         }
 
         return NextResponse.json({
             success: true,
-            message: "Verification code sent.",
-            data: { email: judge.email, expiresInSeconds: OTP_EXPIRATION_MINUTES * 60 },
-        });
+            message: GENERIC_LOGIN_MESSAGE,
+            data: { email, expiresInSeconds: OTP_EXPIRATION_MINUTES * 60 },
+        }, { status: 202 });
     } catch (error) {
         console.error("Judge login failed:", error);
         return NextResponse.json(

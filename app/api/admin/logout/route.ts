@@ -3,7 +3,10 @@ import {
     ADMIN_AUTH_COOKIE,
     getAdminCookieOptions,
     getCurrentAdmin,
+    revokeAuthSession,
+    verifyAdminToken,
 } from "@/lib/auth";
+import { cookies } from "next/headers";
 
 export const runtime = "nodejs";
 
@@ -17,6 +20,10 @@ export async function POST() {
             );
         }
 
+        const token = (await cookies()).get(ADMIN_AUTH_COOKIE)?.value;
+        if (token) {
+            try { await revokeAuthSession(verifyAdminToken(token).jti); } catch { /* cookie is cleared below */ }
+        }
         const response = NextResponse.json(
             { success: true, message: "Logout successful.", data: {} },
             { status: 200 }
