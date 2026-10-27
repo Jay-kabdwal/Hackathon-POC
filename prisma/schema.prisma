@@ -32,7 +32,7 @@ model SuperAdmin {
 
 model Team {
   id        String       @id @default(cuid())
-  teamNumber Int         @unique @default(autoincrement())
+  teamNumber Int          @unique
   name      String       @unique
   members   TeamMember[]
   scores    Score[]

@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { sendRegistrationConfirmationEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma/client";
 
 export const runtime = "nodejs";
 
@@ -126,8 +127,37 @@ export async function POST(request: Request) {
 
     try {
         const team = await prisma.$transaction(async (transaction) => {
+            // Serialize number allocation so concurrent registrations cannot
+            // select the same gap before either transaction commits.
+            await transaction.$executeRaw(
+                Prisma.sql`SELECT pg_advisory_xact_lock(hashtext('curio-team-number-allocation'))`,
+            );
+
+            const availableNumber = await transaction.$queryRaw<
+                Array<{ teamNumber: number }>
+            >(Prisma.sql`
+                SELECT candidate.team_number AS "teamNumber"
+                FROM generate_series(
+                    1,
+                    COALESCE((SELECT MAX("teamNumber") FROM "Team"), 0) + 1
+                ) AS candidate(team_number)
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM "Team" existing
+                    WHERE existing."teamNumber" = candidate.team_number
+                )
+                ORDER BY candidate
+                LIMIT 1
+            `);
+
+            const teamNumber = availableNumber[0]?.teamNumber;
+            if (!Number.isInteger(teamNumber) || teamNumber < 1) {
+                throw new Error("Unable to allocate a team number.");
+            }
+
             const createdTeam = await transaction.team.create({
                 data: {
+                    teamNumber,
                     name: normalizedTeamName,
                     members: {
                         create: members.map((member) => ({
