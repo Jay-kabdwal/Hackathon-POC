@@ -7,6 +7,7 @@ import {
     JUDGE_AUTH_COOKIE,
     signJudgeToken,
     createAuthSession,
+    cleanupExpiredAuthData,
 } from "@/lib/auth";
 import { randomUUID } from "node:crypto";
 
@@ -72,6 +73,7 @@ export async function POST(request: Request) {
     }
 
     try {
+        await cleanupExpiredAuthData();
         const judge = await prisma.judge.findUnique({
             where: { email },
             select: { id: true, name: true, email: true, isActive: true },
@@ -113,9 +115,8 @@ export async function POST(request: Request) {
             });
 
             if (attemptUpdate.count > 0) {
-                await prisma.judgeOTP.updateMany({
+                await prisma.judgeOTP.deleteMany({
                     where: { id: otpRecord.id, attempts: { gte: MAX_ATTEMPTS } },
-                    data: { usedAt: new Date() },
                 });
             }
 
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
             );
         }
 
-        const consumed = await prisma.judgeOTP.updateMany({
+        const consumed = await prisma.judgeOTP.deleteMany({
             where: {
                 id: otpRecord.id,
                 judgeId: judge.id,
@@ -133,7 +134,6 @@ export async function POST(request: Request) {
                 expiresAt: { gt: new Date() },
                 attempts: { lt: MAX_ATTEMPTS },
             },
-            data: { usedAt: new Date() },
         });
 
         if (consumed.count !== 1) {

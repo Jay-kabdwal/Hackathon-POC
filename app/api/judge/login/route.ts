@@ -3,6 +3,7 @@ import { randomInt } from "node:crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendJudgeOtpEmail } from "@/lib/email";
+import { cleanupExpiredAuthData } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
     }
 
     try {
+        await cleanupExpiredAuthData();
         const judge = await prisma.judge.findUnique({
             where: { email },
             select: { id: true, name: true, email: true, isActive: true },
@@ -92,9 +94,8 @@ export async function POST(request: Request) {
         const expiresAt = new Date(Date.now() + OTP_EXPIRATION_MINUTES * 60 * 1000);
 
         const otpRecord = await prisma.$transaction(async (transaction) => {
-            await transaction.judgeOTP.updateMany({
-                where: { judgeId: judge.id, usedAt: null },
-                data: { usedAt: new Date() },
+            await transaction.judgeOTP.deleteMany({
+                where: { judgeId: judge.id },
             });
 
             return transaction.judgeOTP.create({
@@ -111,9 +112,8 @@ export async function POST(request: Request) {
         });
 
         if (!emailSent) {
-            await prisma.judgeOTP.updateMany({
+            await prisma.judgeOTP.deleteMany({
                 where: { id: otpRecord.id, usedAt: null },
-                data: { usedAt: new Date() },
             });
 
             console.error("Judge OTP email delivery failed.");

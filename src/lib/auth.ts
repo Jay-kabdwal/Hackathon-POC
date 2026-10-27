@@ -108,13 +108,18 @@ export async function createAuthSession(subjectId: string, role: "ADMIN" | "JUDG
 }
 
 export async function revokeAuthSession(jti: string) {
-    await prisma.authSession.updateMany({
-        where: { id: jti, revokedAt: null },
-        data: { revokedAt: new Date() },
-    });
+    await prisma.authSession.deleteMany({ where: { id: jti } });
+}
+
+export async function cleanupExpiredAuthData(now = new Date()) {
+    await prisma.$transaction([
+        prisma.authSession.deleteMany({ where: { expiresAt: { lte: now } } }),
+        prisma.judgeOTP.deleteMany({ where: { expiresAt: { lte: now } } }),
+    ]);
 }
 
 export async function getCurrentAdmin() {
+    await cleanupExpiredAuthData();
     const token = (await cookies()).get(ADMIN_AUTH_COOKIE)?.value;
     if (!token) return null;
 
@@ -138,6 +143,7 @@ export async function getCurrentAdmin() {
 }
 
 export async function getCurrentJudge() {
+    await cleanupExpiredAuthData();
     const token = (await cookies()).get(JUDGE_AUTH_COOKIE)?.value;
     if (!token) return null;
 

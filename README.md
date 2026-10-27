@@ -93,6 +93,20 @@ judges and teams are assigned during the security migration, and new judges or
 teams receive assignments transactionally. Both the judge team list and score
 submission endpoint verify the assignment on the server.
 
+Email domain allowlisting is currently disabled. All syntactically valid email
+domains are accepted for registration, Admin login, and Judge OTP login. The
+reusable policy remains available for a future restricted deployment. When the
+restriction is needed, set `ALLOWED_EMAIL_DOMAINS` to a comma-separated list
+of exact domains:
+
+```env
+ALLOWED_EMAIL_DOMAINS=company.com
+```
+
+Only exact domains will match when the policy is re-enabled; for example,
+`person@sub.company.com` is not allowed unless `sub.company.com` is also listed.
+Keep the variable server-only and do not expose it through `NEXT_PUBLIC_*`.
+
 To create or update the seeded super admin, set `ADMIN_EMAIL` and
 `ADMIN_PASSWORD` and run:
 

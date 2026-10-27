@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import {
     ADMIN_AUTH_COOKIE,
     getAdminCookieOptions,
-    getCurrentAdmin,
     revokeAuthSession,
     verifyAdminToken,
 } from "@/lib/auth";
@@ -12,14 +11,6 @@ export const runtime = "nodejs";
 
 export async function POST() {
     try {
-        const admin = await getCurrentAdmin();
-        if (!admin) {
-            return NextResponse.json(
-                { success: false, message: "Unauthorized." },
-                { status: 401 }
-            );
-        }
-
         const token = (await cookies()).get(ADMIN_AUTH_COOKIE)?.value;
         if (token) {
             try { await revokeAuthSession(verifyAdminToken(token).jti); } catch { /* cookie is cleared below */ }
