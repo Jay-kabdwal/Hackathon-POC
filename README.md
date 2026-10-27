@@ -1,207 +1,419 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Curio Hackathon Portal
 
-## Getting Started
+Curio is a full-stack hackathon management portal built with Next.js App
+Router, TypeScript, PostgreSQL, Prisma ORM, Tailwind CSS, JWT sessions, OTP
+authentication, and SMTP email delivery.
 
-First, run the development server:
+The portal provides:
+
+- Public hackathon information and team registration.
+- Admin management for teams, judges, settings, and result publication.
+- Judge OTP authentication and assignment-protected score submission.
+- Public results that respect the configured publication stage.
+
+## Technology stack
+
+- Next.js `16.4.3` with the App Router.
+- React `19.3.0`.
+- TypeScript with strict checking.
+- Tailwind CSS v4 through the existing Turbopack integration.
+- Prisma ORM `7.10.1`.
+- PostgreSQL, including hosted providers such as Neon.
+- `bcryptjs` for password and OTP hashing.
+- `jsonwebtoken` for signed authentication tokens.
+- Nodemailer with Gmail SMTP for email delivery.
+- No external component or icon library. UI icons are inline SVG where used.
+
+## Requirements
+
+Install the following before starting:
+
+- Node.js 20 or newer.
+- npm.
+- PostgreSQL 14 or newer, or a hosted PostgreSQL database.
+- A Gmail account with an SMTP app password if registration and Judge OTP
+  emails should be delivered.
+
+Node and npm versions can be checked with:
+
+```bash
+node --version
+npm --version
+```
+
+## Project structure
+
+```text
+app/
+  api/                    API route handlers
+  admin/                  Admin login and protected pages
+  judge/                  Judge login, OTP, and protected pages
+  details/                Public hackathon details
+  register/               Public registration form
+  results/                Public results page
+  globals.css             Global Tailwind and portal styles
+  layout.tsx              Root layout and metadata
+  page.tsx                Public home page
+
+src/
+  components/             Shared public, Admin, and Judge components
+  generated/prisma/       Generated Prisma Client (do not edit)
+  lib/
+    auth.ts               JWT, cookies, database sessions, cleanup
+    email.ts              SMTP email utilities
+    email-policy.ts       Optional exact email-domain policy
+    prisma.ts             Shared Prisma Client
+
+prisma/
+  schema.prisma           Database schema
+  migrations/             Database migrations
+  seed.ts                 Super Admin seed script
+
+prisma7.config.ts         Prisma 7 configuration
+next.config.ts            Next.js configuration and security headers
+package.json              Scripts and dependencies
+```
+
+## Local setup
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Create the environment file
+
+Create a local `.env` file in the project root. Never commit it to source
+control.
+
+Use the following structure and replace every placeholder:
+
+```env
+# PostgreSQL connection string
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
+
+# Admin seed account
+ADMIN_EMAIL="admin@example.com"
+ADMIN_PASSWORD="replace-with-a-password-at-least-8-characters"
+
+# JWT session configuration
+# Use a long random value in every environment.
+JWT_SECRET="replace-with-a-long-random-secret"
+JWT_EXPIRES_IN="1d"
+
+# Gmail SMTP
+# SMTP_PASS should be a Gmail app password, not the normal account password.
+SMTP_USER="notifications@example.com"
+SMTP_PASS="replace-with-gmail-app-password"
+EMAIL_FROM="notifications@example.com"
+
+# Maximum score accepted by the judge score API.
+# Defaults to 100 if omitted.
+JUDGE_MAX_SCORE="100"
+
+# Optional exact email-domain allowlist.
+# It is currently disabled by the application because all valid email domains
+# are accepted. Set this only when the domain restriction is re-enabled.
+# ALLOWED_EMAIL_DOMAINS="company.com,subsidiary.com"
+```
+
+`DATABASE_URL`, `JWT_SECRET`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD` are required.
+SMTP variables are required for email delivery, but registration can still
+complete if confirmation email delivery fails; the API reports `emailSent:
+false`.
+
+Generate a strong JWT secret instead of using an example:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
+### 3. Generate Prisma Client
+
+```bash
+npx prisma generate --config prisma7.config.ts
+```
+
+The generated client is written to `src/generated/prisma`.
+
+### 4. Apply database migrations
+
+For an existing database or a deployment environment:
+
+```bash
+npx prisma migrate deploy --config prisma7.config.ts
+```
+
+For a new local development database where you are creating additional
+migrations:
+
+```bash
+npx prisma migrate dev --config prisma7.config.ts
+```
+
+Do not run `prisma migrate reset` against a shared or production database.
+
+### 5. Seed the Admin account
+
+```bash
+npx prisma db seed --config prisma7.config.ts
+```
+
+The seed script creates the `SuperAdmin` record from `ADMIN_EMAIL` and
+`ADMIN_PASSWORD`. It does not print or store the plaintext password.
+
+### 6. Start the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-## Team registration API
+## Available commands
 
-Configure these environment variables before starting the application:
+```bash
+npm run dev                              # Start development server
+npm run build                            # Create production build
+npm run start                            # Start production server
+npm run lint                             # Run ESLint
+npx tsc --noEmit                         # Run TypeScript checking
+npx prisma validate --config prisma7.config.ts
+npx prisma generate --config prisma7.config.ts
+npx prisma migrate deploy --config prisma7.config.ts
+npx prisma db seed --config prisma7.config.ts
+```
+
+The project currently does not include an automated test script. Use lint,
+TypeScript checking, build validation, and endpoint smoke tests before
+deployment.
+
+## Main URLs
+
+### Public pages
+
+| URL | Purpose |
+| --- | --- |
+| `/` | Hackathon landing page |
+| `/details` | Hackathon information |
+| `/register` | Team registration |
+| `/results` | Published results |
+
+### Admin pages
+
+| URL | Purpose |
+| --- | --- |
+| `/admin/login` | Admin authentication |
+| `/admin/dashboard` | Portal overview and metrics |
+| `/admin/teams` | Team directory |
+| `/admin/teams/:id` | Team details |
+| `/admin/judges` | Add, activate, and deactivate judges |
+| `/admin/settings` | Judging and result-stage settings |
+
+### Judge pages
+
+| URL | Purpose |
+| --- | --- |
+| `/judge/login` | Request Judge OTP |
+| `/judge/verify-otp` | Verify the six-digit OTP |
+| `/judge/dashboard` | View assigned teams |
+| `/judge/teams/:id` | Submit IDEA or SOLUTION scores |
+
+## API endpoints
+
+### Public endpoints
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/register` | Create a team and 1–4 members |
+| `GET` | `/api/results` | Read results according to publication stage |
+
+### Admin endpoints
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/admin/login` | Authenticate the Super Admin |
+| `POST` | `/api/admin/logout` | Delete the Admin session and clear cookie |
+| `GET` | `/api/admin/dashboard` | Read dashboard metrics |
+| `GET` | `/api/admin/teams` | Search and paginate teams |
+| `GET` | `/api/admin/teams/:id` | Read team details |
+| `GET`, `POST` | `/api/admin/judges` | List or create judges |
+| `PATCH` | `/api/admin/judges/:id` | Activate or deactivate a judge |
+| `GET`, `PATCH` | `/api/admin/settings` | Read or update hackathon settings |
+
+### Judge endpoints
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/judge/login` | Request an OTP |
+| `POST` | `/api/judge/verify-otp` | Verify OTP and create a Judge session |
+| `POST` | `/api/judge/logout` | Delete the Judge session and clear cookie |
+| `GET` | `/api/judge/teams` | List teams assigned to the Judge |
+| `POST` | `/api/judge/scores` | Create or update an assigned team score |
+
+## Functional requirements
+
+### Team registration
+
+- Accepts a team name and between one and four members.
+- Requires exactly one team leader.
+- Validates names, employee IDs, and email syntax.
+- Prevents duplicate team names, member emails, and employee IDs.
+- Generates a unique team number through the database.
+- Creates the team and members atomically.
+- Assigns new teams to active Judges atomically.
+- Sends a confirmation email to the leader after the transaction commits.
+- Returns `emailSent` so email failure does not undo successful registration.
+
+### Admin management
+
+- Uses the `SuperAdmin` model and bcrypt password verification.
+- Creates a signed JWT with a unique session ID (`jti`).
+- Stores the session in `AuthSession`.
+- Uses an HTTP-only cookie named `admin_token`.
+- Provides dashboard metrics, team lookup, Judge management, and settings.
+- Protects pages and APIs independently on the server.
+
+### Judge authentication and scoring
+
+- Uses email OTP authentication instead of a password.
+- Generates a cryptographically random six-digit OTP.
+- Stores only a bcrypt hash of the OTP.
+- OTPs expire after five minutes and are deleted after use, failure-limit
+  exhaustion, replacement, or expiry cleanup.
+- Rate-limits OTP requests and verification attempts.
+- Creates a database-backed Judge session after successful verification.
+- Only permits scores for teams assigned to the authenticated Judge.
+- Supports `IDEA` and `SOLUTION` rounds.
+- Validates integer scores from zero through `JUDGE_MAX_SCORE`.
+- Uses an upsert to prevent duplicate score rows.
+
+### Results
+
+- `HIDDEN` exposes no rankings or scores.
+- `IDEA_REVEALED` exposes IDEA totals.
+- `FINAL_REVEALED` exposes IDEA, SOLUTION, and additive total scores.
+- Includes registered teams even when scores are missing.
+- Assigns equal ranks to equal totals.
+
+## Non-functional requirements
+
+### Security
+
+- Authentication is checked server-side.
+- Admin and Judge sessions are stored in the database.
+- Logout deletes the corresponding session row and clears the cookie.
+- Expired authentication sessions and OTP records are cleaned up.
+- Cookies are HTTP-only and use `SameSite=Strict`.
+- Cookies use `Secure` automatically in production.
+- JWTs require `JWT_SECRET`, expiration, subject, role, and `jti` validation.
+- Judge team and score access is assignment-authorized.
+- Passwords and OTPs are bcrypt-hashed.
+- Login and OTP responses avoid exposing account existence where applicable.
+- Production responses include HSTS, clickjacking, MIME-sniffing, referrer,
+  and permissions security headers.
+- Secrets are server-only and must not use `NEXT_PUBLIC_` variables.
+
+### Reliability and data integrity
+
+- Team creation, member creation, and assignment creation use Prisma
+  transactions.
+- Unique database constraints remain the final protection against duplicates.
+- Email delivery runs after successful database commits.
+- API errors use explicit HTTP status codes and JSON messages.
+- Loading, empty, success, and error states are shown in the UI.
+
+### Accessibility and responsive behavior
+
+- Forms use labels and browser-compatible autocomplete attributes.
+- Interactive elements expose accessible names and keyboard focus styles.
+- Admin and public layouts adapt to mobile, tablet, and desktop sizes.
+- The Judge workspace uses a compact responsive header rather than a sidebar.
+- Motion is reduced when `prefers-reduced-motion` is enabled.
+- The animated public hero object is hidden on small screens to prevent text
+  overlap.
+
+### Maintainability
+
+- The project uses a shared Prisma client.
+- Authentication and email logic are centralized in `src/lib`.
+- Shared Admin, Judge, and public UI components reduce duplication.
+- No external component library is required.
+- Prisma schema changes are tracked through migrations.
+
+## Security and deployment checklist
+
+Before deploying:
+
+1. Replace every local placeholder secret.
+2. Rotate any credentials that may have been exposed during development.
+3. Use a unique high-entropy `JWT_SECRET`.
+4. Use a Gmail app password or another dedicated SMTP credential.
+5. Configure `DATABASE_URL` with TLS and least-privilege database access.
+6. Set `NODE_ENV=production`.
+7. Serve the application through HTTPS.
+8. Apply migrations with `prisma migrate deploy`.
+9. Seed the Admin account only with secure deployment variables.
+10. Confirm that `.env` is ignored and not included in the repository.
+11. Run lint, TypeScript checking, and a production build.
+12. Test Admin logout, Judge logout, OTP expiry, and unauthorized API calls.
+
+## Email-domain allowlist
+
+Email-domain restriction is currently disabled. All syntactically valid email
+domains are accepted.
+
+The reusable policy is available in `src/lib/email-policy.ts`. If an
+organization later requires domain restriction, configure:
 
 ```env
-DATABASE_URL="postgresql://..."
-SMTP_USER="yourgmail@gmail.com"
-SMTP_PASS="your-google-app-password"
-EMAIL_FROM="yourgmail@gmail.com"
+ALLOWED_EMAIL_DOMAINS=company.com,subsidiary.com
 ```
 
-Send a `POST` request to `/api/register` with one to four members and exactly
-one leader:
+When enabled, domains are matched exactly. `person@sub.company.com` is not
+accepted by `company.com` alone.
 
-```bash
-curl -X POST http://localhost:3000/api/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "teamName": "Team Alpha",
-    "members": [
-      {
-        "name": "Ada Lovelace",
-        "email": "ada@example.com",
-        "employeeId": "EMP001",
-        "isLeader": true
-      }
-    ]
-  }'
-```
+## Troubleshooting
 
-Successful registrations return HTTP `201` with the generated `teamNumber` and
-an `emailSent` boolean. Invalid requests return `400`; duplicate team names,
-emails, or employee IDs return `409`. Email delivery failures do not undo a
-successful registration and return `emailSent: false`.
+### Prisma cannot connect
 
-Email is sent through Gmail SMTP using Nodemailer. `SMTP_PASS` must be a
-Google App Password, not your normal Google account password.
+- Confirm `DATABASE_URL` is present and valid.
+- Confirm the database is reachable from the current network.
+- For hosted PostgreSQL, keep the provider's TLS query parameters.
+- Run:
 
-## Admin authentication API
+  ```bash
+  npx prisma validate --config prisma7.config.ts
+  npx prisma migrate deploy --config prisma7.config.ts
+  ```
 
-Configure these additional environment variables:
+### Admin login fails
 
-```env
-JWT_SECRET="use-a-long-random-secret"
-JWT_EXPIRES_IN="1d"
-ADMIN_EMAIL="admin@example.com"
-ADMIN_PASSWORD="use-a-password-at-least-8-characters-long"
-JUDGE_MAX_SCORE="100"
-```
+- Confirm `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `JWT_SECRET`.
+- Confirm the Admin was seeded:
 
-`JWT_EXPIRES_IN` accepts a number followed by `s`, `m`, `h`, `d`, or `w`, such
-as `15m` or `7d`. The default is `1d`.
+  ```bash
+  npx prisma db seed --config prisma7.config.ts
+  ```
 
-Log in with:
+- Ensure `ADMIN_PASSWORD` has at least eight characters.
 
-```bash
-curl -i -c cookies.txt -X POST http://localhost:3000/api/admin/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"your-password"}'
-```
+### Emails are not sent
 
-The successful response sets an HTTP-only `admin_token` cookie. Invalid
-credentials return `401`; malformed input returns `400`. Clear the cookie with:
+- Confirm `SMTP_USER`, `SMTP_PASS`, and `EMAIL_FROM`.
+- Use a Gmail app password when Gmail two-factor authentication is enabled.
+- Registration still succeeds when confirmation email delivery fails; inspect
+  the API `emailSent` field and server logs.
 
-```bash
-curl -i -b cookies.txt -c cookies.txt -X POST http://localhost:3000/api/admin/logout
-```
+### Judge OTP does not arrive
 
-Admin and judge JWTs are backed by the `AuthSession` table. Logout revokes the
-server-side session as well as clearing the HTTP-only cookie, so a copied token
-cannot continue to access protected APIs after logout.
+- Confirm the Judge exists and is active in the Admin portal.
+- Confirm SMTP configuration.
+- Request a new OTP; generating a new OTP deletes the previous one.
+- OTPs expire after five minutes.
 
-Judge access is assignment-backed through `JudgeTeamAssignment`. Existing
-judges and teams are assigned during the security migration, and new judges or
-teams receive assignments transactionally. Both the judge team list and score
-submission endpoint verify the assignment on the server.
+## License
 
-Email domain allowlisting is currently disabled. All syntactically valid email
-domains are accepted for registration, Admin login, and Judge OTP login. The
-reusable policy remains available for a future restricted deployment. When the
-restriction is needed, set `ALLOWED_EMAIL_DOMAINS` to a comma-separated list
-of exact domains:
-
-```env
-ALLOWED_EMAIL_DOMAINS=company.com
-```
-
-Only exact domains will match when the policy is re-enabled; for example,
-`person@sub.company.com` is not allowed unless `sub.company.com` is also listed.
-Keep the variable server-only and do not expose it through `NEXT_PUBLIC_*`.
-
-To create or update the seeded super admin, set `ADMIN_EMAIL` and
-`ADMIN_PASSWORD` and run:
-
-```bash
-npx prisma db seed
-```
-
-`JUDGE_MAX_SCORE` controls the inclusive maximum accepted score for judge
-submissions and defaults to `100`.
-
-### Gmail SMTP setup
-
-1. Enable 2-Step Verification for the Gmail account.
-2. Generate a Google App Password if the account supports App Passwords.
-3. Put `SMTP_USER`, `SMTP_PASS`, and `EMAIL_FROM` in the local `.env` file.
-4. Keep `.env` out of source control; this project ignores `.env*`.
-5. Restart the Next.js development server after changing environment variables.
-
-The SMTP utility reports safe error details such as the SMTP error name, code,
-response code, and command. It never logs credentials or OTP values. A
-successful SMTP submission means Gmail accepted the message for processing; it
-does not guarantee inbox delivery.
-
-Test team registration:
-
-```bash
-curl -X POST http://localhost:3000/api/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "teamName": "Team Alpha",
-    "members": [{
-      "name": "Ada Lovelace",
-      "email": "recipient@example.com",
-      "employeeId": "EMP001",
-      "isLeader": true
-    }]
-  }'
-```
-
-Test judge OTP email:
-
-```bash
-curl -X POST http://localhost:3000/api/judge/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"judge@example.com"}'
-```
-
-If SMTP authentication fails, verify that 2-Step Verification is enabled and
-that `SMTP_PASS` is a Google App Password. If the account does not offer App
-Passwords, Gmail SMTP password authentication cannot be used with this setup;
-do not use the normal account password.
-
-## Results API
-
-`GET /api/results` is public and uses `HackathonSettings.resultStage`.
-
-```bash
-curl http://localhost:3000/api/results
-```
-
-When the stage is `HIDDEN`, the response contains no scores:
-
-```json
-{
-  "success": true,
-  "message": "Results have not been released yet.",
-  "data": {
-    "resultStage": "HIDDEN",
-    "released": false,
-    "results": []
-  }
-}
-```
-
-At `IDEA_REVEALED`, each registered team is returned with its IDEA total.
-Missing scores count as zero. At `FINAL_REVEALED`, `totalScore` is the sum of
-the IDEA and SOLUTION totals because the project has no other final-scoring
-rule. Equal totals receive the same rank; team number is used only as a
-deterministic display order for ties.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is private internal software. Add a license before distributing
+it outside the owning organization.

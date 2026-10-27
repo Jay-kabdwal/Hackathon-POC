@@ -134,7 +134,7 @@ a:hover { color: var(--accent); }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
 @media (max-width: 767px) {
-  .hero-object { display: none; }
+  .hero-stage { display: none !important; }
 }
 @media (max-width: 767px) {
   .judge-sidebar { transform: translateX(-100%); transition: transform .25s ease; }
